@@ -1,61 +1,67 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Paceletics Beta | Sign in</title>
-<meta name="description" content="Paceletics beta account access for athletes, coaches and clubs."><meta name="theme-color" content="#07101d"><meta name="robots" content="noindex,nofollow">
-<link rel="icon" type="image/svg+xml" href="icons/icon.svg"><link rel="manifest" href="manifest.webmanifest">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script>
+<meta name="description" content="Paceletics beta account access for athletes, coaches and clubs.">
+<meta name="theme-color" content="#07101d">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js?v=0.5.1"></script>
 <style>
-:root{--bg:#07101d;--panel:#101a2a;--line:#263651;--text:#f6f8fb;--muted:#9caac0;--orange:#ff8a00;--yellow:#ffc400;--green:#5fe3a1;--red:#ff9aaa}*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:#07101d;color:var(--text)}button,input,select{font:inherit}.hidden{display:none!important}.auth-page{min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 50% 0,#172947 0,#0b1628 40%,#07101d 75%)}.auth-card{width:min(465px,100%);background:rgba(16,26,42,.98);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 30px 90px #0007}.brand{display:flex;align-items:center;gap:12px;margin-bottom:20px}.logo{width:54px;height:54px;border-radius:15px;background:linear-gradient(135deg,var(--orange),var(--yellow));display:grid;place-items:center;color:#171108;font-weight:1000;font-size:22px}.brand h1{margin:0;font-size:25px}.brand p,.meta{margin:3px 0 0;color:var(--muted);font-size:12px}.beta{display:inline-block;border-radius:999px;padding:4px 8px;background:#382811;color:#ffd36d;font-size:11px;font-weight:900;margin-bottom:15px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#0b1524;padding:5px;border-radius:11px;margin-bottom:16px}.tabs button{border:0;background:transparent;color:var(--muted);padding:9px;border-radius:8px;font-weight:800;cursor:pointer}.tabs button.active{background:#21324d;color:white}.form{display:grid;gap:11px}.form label{display:block;font-size:12px;color:#cbd6e4;margin-bottom:5px}.form input,.form select{width:100%;background:#0b1524;border:1px solid #334966;color:white;padding:11px;border-radius:9px;outline:none}.form input:focus,.form select:focus{border-color:var(--yellow)}.btn{border:0;border-radius:10px;padding:11px 13px;font-weight:900;cursor:pointer}.primary{background:linear-gradient(135deg,var(--orange),var(--yellow));color:#171108}.ghost{background:transparent;color:#dce6f1;border:1px solid #354a67}.btn:disabled{opacity:.6;cursor:wait}.help{text-align:center;margin-top:12px;color:var(--muted);font-size:12px}.link{border:0;background:none;color:#ffd269;font-weight:800;cursor:pointer;padding:0}.message{display:none;margin-top:12px;padding:10px 11px;border-radius:9px;font-size:12px;line-height:1.45}.message.show{display:block}.message.ok{background:#102a21;border:1px solid #28563f;color:#a4ecc8}.message.err{background:#321923;border:1px solid #643246;color:#ffc0ca}.fine{margin-top:16px;color:#7f90a8;font-size:11px;line-height:1.45;text-align:center}.fine a{color:#d9a93d}.app-shell{height:100vh;display:grid;grid-template-rows:auto 1fr;background:#07101d}.appbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;background:#0c1626;border-bottom:1px solid var(--line)}.appbar .left{display:flex;align-items:center;gap:9px;min-width:0}.mini-logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--orange),var(--yellow));display:grid;place-items:center;color:#171108;font-weight:1000}.who{min-width:0}.who strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}.who span{color:var(--muted);font-size:11px}.dashboard-frame{width:100%;height:100%;border:0;background:#07101d}@media(max-width:600px){.auth-card{padding:19px}.appbar{padding:7px 9px}.who strong{max-width:180px}}
-</style></head>
+:root{--bg:#07101d;--panel:#101a2a;--line:#263651;--text:#f6f8fb;--muted:#9caac0;--orange:#ff8a00;--yellow:#ffc400}*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:#07101d;color:var(--text)}button,input,select{font:inherit}.hidden{display:none!important}.auth-page{min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 50% 0,#172947 0,#0b1628 40%,#07101d 75%)}.auth-card{width:min(465px,100%);background:#101a2a;border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 30px 90px #0007}.brand{display:flex;align-items:center;gap:12px;margin-bottom:20px}.logo{width:54px;height:54px;border-radius:15px;background:linear-gradient(135deg,var(--orange),var(--yellow));display:grid;place-items:center;color:#171108;font-weight:1000;font-size:22px}.brand h1{margin:0;font-size:25px}.brand p,.meta{margin:3px 0 0;color:var(--muted);font-size:12px}.beta{display:inline-block;border-radius:999px;padding:4px 8px;background:#382811;color:#ffd36d;font-size:11px;font-weight:900;margin-bottom:15px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#0b1524;padding:5px;border-radius:11px;margin-bottom:16px}.tabs button{border:0;background:transparent;color:var(--muted);padding:9px;border-radius:8px;font-weight:800;cursor:pointer}.tabs button.active{background:#21324d;color:#fff}.form{display:grid;gap:11px}.form label{display:block;font-size:12px;color:#cbd6e4;margin-bottom:5px}.form input,.form select{width:100%;background:#0b1524;border:1px solid #334966;color:white;padding:11px;border-radius:9px;outline:none}.btn{border:0;border-radius:10px;padding:11px 13px;font-weight:900;cursor:pointer}.primary{background:linear-gradient(135deg,var(--orange),var(--yellow));color:#171108}.ghost{background:transparent;color:#dce6f1;border:1px solid #354a67}.help{text-align:center;margin-top:12px;color:var(--muted);font-size:12px}.link{border:0;background:none;color:#ffd269;font-weight:800;cursor:pointer;padding:0}.message{display:none;margin-top:12px;padding:10px 11px;border-radius:9px;font-size:12px;line-height:1.45}.message.show{display:block}.message.ok{background:#102a21;border:1px solid #28563f;color:#a4ecc8}.message.err{background:#321923;border:1px solid #643246;color:#ffc0ca}.fine{margin-top:16px;color:#7f90a8;font-size:11px;line-height:1.45;text-align:center}.fine a{color:#d9a93d}.app-shell{height:100vh;background:#07101d}.dashboard-frame{width:100%;height:100%;border:0;background:#07101d}
+</style>
+</head>
 <body>
 <section id="authPage" class="auth-page">
-  <div class="auth-card">
-    <div class="brand"><div class="logo">P</div><div><h1>Paceletics</h1><p>Plan. Train. Improve.</p></div></div>
-    <span class="beta">BETA v0.3 · REAL ACCOUNT LOGIN</span>
-    <div id="tabs" class="tabs"><button id="loginTab" class="active" type="button">Log in</button><button id="signupTab" type="button">Create account</button></div>
-    <form id="loginForm" class="form">
-      <div><label>Email</label><input id="loginEmail" type="email" autocomplete="email" required placeholder="you@example.com"></div>
-      <div><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Your password"></div>
-      <button id="loginButton" class="btn primary" type="submit">Log in</button>
-      <div class="help"><button id="forgotButton" class="link" type="button">Forgot password?</button></div>
-    </form>
-    <form id="signupForm" class="form hidden">
-      <div><label>Name</label><input id="signupName" type="text" autocomplete="name" required placeholder="Your name"></div>
-      <div><label>Account type</label><select id="signupRole"><option value="athlete">Athlete</option><option value="coach" selected>Coach</option><option value="club">Club</option></select></div>
-      <div><label>Email</label><input id="signupEmail" type="email" autocomplete="email" required placeholder="you@example.com"></div>
-      <div><label>Password</label><input id="signupPassword" type="password" minlength="8" autocomplete="new-password" required placeholder="At least 8 characters"></div>
-      <button id="signupButton" class="btn primary" type="submit">Create Paceletics account</button>
-    </form>
-    <form id="resetForm" class="form hidden">
-      <div><label>New password</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required placeholder="At least 8 characters"></div>
-      <button class="btn primary" type="submit">Set new password</button>
-    </form>
-    <div id="message" class="message"></div>
-    <div class="fine">Account authentication is provided through Supabase. <a href="privacy.html">Beta privacy notice</a></div>
-  </div>
+<div class="auth-card">
+<div class="brand"><div class="logo">P</div><div><h1>Paceletics</h1><p>Plan. Train. Improve.</p></div></div>
+<span class="beta">BETA v0.5 · CLOUD</span>
+<div id="tabs" class="tabs"><button id="loginTab" class="active" type="button">Log in</button><button id="signupTab" type="button">Create account</button></div>
+<form id="loginForm" class="form">
+<div><label>Email</label><input id="loginEmail" type="email" autocomplete="email" required></div>
+<div><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+<button id="loginButton" class="btn primary" type="submit">Log in</button>
+<div class="help"><button id="forgotButton" class="link" type="button">Forgot password?</button></div>
+</form>
+<form id="signupForm" class="form hidden">
+<div><label>Name</label><input id="signupName" type="text" required></div>
+<div><label>Account type</label><select id="signupRole"><option value="athlete">Athlete</option><option value="coach" selected>Coach</option><option value="club">Club</option></select></div>
+<div><label>Email</label><input id="signupEmail" type="email" required></div>
+<div><label>Password</label><input id="signupPassword" type="password" minlength="8" required></div>
+<button id="signupButton" class="btn primary" type="submit">Create Paceletics account</button>
+</form>
+<form id="resetForm" class="form hidden">
+<div><label>New password</label><input id="newPassword" type="password" minlength="8" required></div>
+<button class="btn primary" type="submit">Set new password</button>
+</form>
+<div id="message" class="message"></div>
+<div class="fine">Account authentication is provided through Supabase. <a href="privacy.html">Beta privacy notice</a></div>
+</div>
 </section>
 <section id="appShell" class="app-shell hidden">
-  <header class="appbar"><div class="left"><div class="mini-logo">P</div><div class="who"><strong id="userName">Paceletics user</strong><span id="userRole">Member</span></div></div><button id="logoutButton" class="btn ghost" type="button">Log out</button></header>
-  <iframe id="dashboardFrame" class="dashboard-frame" src="dashboard.html" title="Paceletics Dashboard"></iframe>
+<iframe id="dashboardFrame" class="dashboard-frame" src="dashboard.html?v=0.5.1" title="Paceletics Dashboard"></iframe>
 </section>
 <script>
 const cfg=window.PACELETICS_CONFIG||{};
 const sb=(window.supabase&&cfg.supabaseUrl&&cfg.supabasePublishableKey)?window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey):null;
 const $=id=>document.getElementById(id),authPage=$('authPage'),appShell=$('appShell'),frame=$('dashboardFrame');
-function labelRole(r){return({athlete:'Athlete',coach:'Coach',club:'Club'})[r]||'Member'}
 function msg(text,type='err'){const e=$('message');e.textContent=text;e.className='message show '+type}
 function clearMsg(){$('message').textContent='';$('message').className='message'}
 function mode(v){clearMsg();$('loginForm').classList.toggle('hidden',v!=='login');$('signupForm').classList.toggle('hidden',v!=='signup');$('resetForm').classList.toggle('hidden',v!=='reset');$('tabs').classList.toggle('hidden',v==='reset');$('loginTab').classList.toggle('active',v==='login');$('signupTab').classList.toggle('active',v==='signup')}
-function unlockDashboard(user){const role=user?.user_metadata?.account_type||'coach',name=user?.user_metadata?.full_name||user?.email||'Paceletics user';$('userName').textContent=name;$('userRole').textContent=labelRole(role)+' account · Beta v0.3';authPage.classList.add('hidden');appShell.classList.remove('hidden');const send=()=>frame.contentWindow?.postMessage({type:'paceletics-auth-ok',role,userId:user.id},location.origin);if(frame.contentDocument?.readyState==='complete')send();frame.onload=send}
+async function clearOldCache(){try{if('serviceWorker' in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()))}if('caches' in window){const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('paceletics-')).map(k=>caches.delete(k)))}}catch(e){}}
+function unlockDashboard(user){authPage.classList.add('hidden');appShell.classList.remove('hidden');frame.src='dashboard.html?v=0.5.1';const send=()=>frame.contentWindow?.postMessage({type:'paceletics-auth-ok',role:user?.user_metadata?.account_type||'coach',userId:user.id},location.origin);frame.onload=send;setTimeout(send,500)}
 function signedOut(){appShell.classList.add('hidden');authPage.classList.remove('hidden');mode('login')}
-async function init(){if(!sb){signedOut();msg('Paceletics could not load the login configuration. Refresh the page.');return}const {data,error}=await sb.auth.getSession();if(error){signedOut();msg(error.message);return}if(data.session?.user)unlockDashboard(data.session.user);else signedOut();sb.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){appShell.classList.add('hidden');authPage.classList.remove('hidden');mode('reset');msg('Enter a new password for your Paceletics account.','ok');return}if(session?.user)unlockDashboard(session.user);else if(event==='SIGNED_OUT')signedOut()})}
+async function init(){await clearOldCache();if(!sb){signedOut();msg('Paceletics could not load the login configuration. Refresh the page.');return}const {data,error}=await sb.auth.getSession();if(error){signedOut();msg(error.message);return}if(data.session?.user)unlockDashboard(data.session.user);else signedOut();sb.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){appShell.classList.add('hidden');authPage.classList.remove('hidden');mode('reset');msg('Enter a new password for your Paceletics account.','ok');return}if(session?.user)unlockDashboard(session.user);else if(event==='SIGNED_OUT')signedOut()})}
 $('loginTab').onclick=()=>mode('login');$('signupTab').onclick=()=>mode('signup');
-$('loginForm').onsubmit=async e=>{e.preventDefault();clearMsg();const b=$('loginButton');b.disabled=true;b.textContent='Logging in…';const {error}=await sb.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});b.disabled=false;b.textContent='Log in';if(error)msg(error.message)};
-$('signupForm').onsubmit=async e=>{e.preventDefault();clearMsg();const b=$('signupButton');b.disabled=true;b.textContent='Creating account…';const redirectTo=location.origin+location.pathname;const {data,error}=await sb.auth.signUp({email:$('signupEmail').value.trim(),password:$('signupPassword').value,options:{emailRedirectTo:redirectTo,data:{full_name:$('signupName').value.trim(),account_type:$('signupRole').value}}});b.disabled=false;b.textContent='Create Paceletics account';if(error)msg(error.message);else if(data.session)unlockDashboard(data.user);else msg('Account created. Check your email and confirm your address, then return here to log in.','ok')};
-$('forgotButton').onclick=async()=>{const email=$('loginEmail').value.trim();if(!email){msg('Enter your email address first, then press Forgot password.');return}const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)msg(error.message);else msg('Password reset email sent. Check your inbox.','ok')};
-$('resetForm').onsubmit=async e=>{e.preventDefault();const {error}=await sb.auth.updateUser({password:$('newPassword').value});if(error)msg(error.message);else{msg('Password updated. Opening Paceletics…','ok');const {data}=await sb.auth.getUser();if(data.user)setTimeout(()=>unlockDashboard(data.user),500)}};
-$('logoutButton').onclick=async()=>{await sb.auth.signOut()};
+$('loginForm').onsubmit=async e=>{e.preventDefault();clearMsg();const b=$('loginButton');b.disabled=true;const {error}=await sb.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});b.disabled=false;if(error)msg(error.message)};
+$('signupForm').onsubmit=async e=>{e.preventDefault();clearMsg();const {data,error}=await sb.auth.signUp({email:$('signupEmail').value.trim(),password:$('signupPassword').value,options:{emailRedirectTo:location.origin+location.pathname,data:{full_name:$('signupName').value.trim(),account_type:$('signupRole').value}}});if(error)msg(error.message);else if(data.session)unlockDashboard(data.user);else msg('Account created. Check your email and confirm your address, then return here to log in.','ok')};
+$('forgotButton').onclick=async()=>{const email=$('loginEmail').value.trim();if(!email){msg('Enter your email address first.');return}const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)msg(error.message);else msg('Password reset email sent.','ok')};
+$('resetForm').onsubmit=async e=>{e.preventDefault();const {error}=await sb.auth.updateUser({password:$('newPassword').value});if(error)msg(error.message);else msg('Password updated.','ok')};
 window.addEventListener('DOMContentLoaded',init);
-</script></body></html>
+</script>
+</body>
+</html>
