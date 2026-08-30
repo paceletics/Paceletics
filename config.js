@@ -110,3 +110,20 @@ window.PACELETICS_CONFIG = {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
   else install();
 })();
+
+// Full v0.8 Session Builder links for the cloud dashboard.
+(function installSessionBuilderLinks(){
+  function install(){
+    ['buildBtn','buildInline'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el)return;
+      el.addEventListener('click',e=>{
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        location.href='session-builder.html';
+      },true);
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);
+  else install();
+})();
