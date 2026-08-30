@@ -127,3 +127,90 @@ window.PACELETICS_CONFIG = {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);
   else install();
 })();
+
+// v0.8.1 Session Builder dropdowns.
+// 1) Show one athlete target at a time in a dropdown.
+// 2) Let coaches choose a previously built session and load it back into the form.
+(function installBuilderDropdowns(){
+  function isBuilder(){ return /session-builder\.html$/i.test(location.pathname); }
+  if(!isBuilder()) return;
+
+  function fire(el,type){ if(el) el.dispatchEvent(new Event(type,{bubbles:true})); }
+
+  function installTargetDropdown(){
+    const targets=document.getElementById('targets');
+    if(!targets || document.getElementById('targetAthleteSelect')) return;
+    const card=targets.closest('.card');
+    if(!card) return;
+
+    const wrap=document.createElement('div');
+    wrap.style.marginTop='12px';
+    wrap.innerHTML='<label>Preview athlete</label><select id="targetAthleteSelect"></select>';
+    targets.parentNode.insertBefore(wrap,targets);
+    const select=document.getElementById('targetAthleteSelect');
+
+    function refresh(){
+      const items=[...targets.querySelectorAll('.item')].filter(x=>!x.classList.contains('muted') || x.querySelector('strong'));
+      const names=items.map((item,i)=>({i,name:item.querySelector('strong')?.textContent?.trim()||('Athlete '+(i+1))}));
+      const previous=select.value;
+      select.innerHTML=names.length?names.map(x=>'<option value="'+x.i+'">'+x.name.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</option>').join(''):'<option>No athletes selected</option>';
+      if(names.length){
+        if(names.some(x=>String(x.i)===previous)) select.value=previous;
+        else select.value=String(names[0].i);
+      }
+      items.forEach((item,i)=>item.style.display=String(i)===select.value?'block':'none');
+      if(!items.length) targets.querySelectorAll('.item').forEach(x=>x.style.display='block');
+    }
+
+    select.addEventListener('change',refresh);
+    new MutationObserver(()=>setTimeout(refresh,0)).observe(targets,{childList:true,subtree:true});
+    refresh();
+  }
+
+  async function installBuiltSessionDropdown(){
+    if(document.getElementById('builtSessionSelect')) return;
+    const form=document.querySelector('.formgrid');
+    if(!form || !window.supabase || !window.PACELETICS_CONFIG) return;
+
+    const holder=document.createElement('div');
+    holder.className='full';
+    holder.innerHTML='<label>Built sessions</label><select id="builtSessionSelect"><option value="">Choose a saved session…</option></select>';
+    form.insertBefore(holder,form.firstChild);
+    const select=document.getElementById('builtSessionSelect');
+
+    try{
+      const c=window.supabase.createClient(window.PACELETICS_CONFIG.supabaseUrl,window.PACELETICS_CONFIG.supabasePublishableKey);
+      const {data,error}=await c.from('sessions').select('*').order('created_at',{ascending:false}).limit(100);
+      if(error) throw error;
+      const sessions=data||[];
+      sessions.forEach(s=>{
+        const o=document.createElement('option');
+        o.value=s.id;
+        o.textContent=(s.title||'Session')+(s.scheduled_date?' · '+s.scheduled_date:'')+(s.event?' · '+s.event:'');
+        o.dataset.session=JSON.stringify(s);
+        select.appendChild(o);
+      });
+      if(!sessions.length) select.innerHTML='<option value="">No saved sessions yet</option>';
+
+      select.addEventListener('change',()=>{
+        const opt=select.selectedOptions[0];
+        if(!opt || !opt.dataset.session) return;
+        const s=JSON.parse(opt.dataset.session);
+        const set=(id,val)=>{const el=document.getElementById(id);if(el&&val!==undefined&&val!==null)el.value=val;};
+        set('name',s.title||'');set('event',s.event||'200m');set('mainSet',s.main_set||'');set('recovery',s.recovery||'');set('effort',s.effort||90);set('date',s.scheduled_date||'');set('notes',s.notes||'');
+        if(s.training_goal) set('goal',s.training_goal);
+        ['name','mainSet','recovery','effort','notes'].forEach(id=>fire(document.getElementById(id),'input'));
+        ['event','goal','date'].forEach(id=>fire(document.getElementById(id),'change'));
+      });
+    }catch(e){
+      select.innerHTML='<option value="">Could not load saved sessions</option>';
+    }
+  }
+
+  function install(){
+    setTimeout(installTargetDropdown,700);
+    setTimeout(installBuiltSessionDropdown,900);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);
+  else install();
+})();
