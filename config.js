@@ -88,6 +88,21 @@ window.PACELETICS_CONFIG = {
   else install();
 })();
 
+// Open the friendly result-entry page from the dashboard.
+(function installResultEntryLink(){
+  function install(){
+    const el=document.getElementById('logResultBtn');
+    if(!el)return;
+    el.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      location.href='result-entry.html?v=0.9.0';
+    },true);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);
+  else install();
+})();
+
 // v0.8.8+: Date is optional in Session Builder.
 (function installOptionalSessionDate(){
   if(!/session-builder\.html$/i.test(location.pathname)) return;
@@ -195,8 +210,6 @@ window.PACELETICS_CONFIG = {
       setTimeout(syncMode,0);
     });
 
-    // Changing event deliberately clears the setup in the builder. Keep the edit target
-    // so the coach can rebuild the session and still update the same saved record.
     if(eventSelect) eventSelect.addEventListener('change',()=>{
       if(!editingId) return;
       setTimeout(()=>{
