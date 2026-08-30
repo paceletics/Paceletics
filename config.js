@@ -30,10 +30,7 @@ window.PACELETICS_CONFIG = {
   window.supabase.createClient = createClientPatched;
 })();
 
-// Parent-page dashboard recovery. If the embedded dashboard's normal startup
-// does not clear its loading screen, call its cloud loader directly. If its
-// JavaScript failed before defining loadCloud, show a useful error rather
-// than spinning forever.
+// Older embedded-dashboard recovery. Harmless on the current top-level v0.6 dashboard.
 (function installDashboardRecovery(){
   function install(){
     const frame = document.getElementById('dashboardFrame');
@@ -70,6 +67,44 @@ window.PACELETICS_CONFIG = {
     frame.addEventListener('load', () => setTimeout(recover, 1200));
     setTimeout(recover, 2500);
     setTimeout(recover, 6000);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
+  else install();
+})();
+
+// Athlete profile links for the v0.6+ cloud dashboard.
+(function installAthleteProfileLinks(){
+  function enhance(){
+    const rows = document.querySelectorAll('#athleteRows tr');
+    rows.forEach(row => {
+      if (row.dataset.profileEnhanced === '1') return;
+      const deleteBtn = row.querySelector('[data-delete-athlete]');
+      const firstCell = row.querySelector('td');
+      if (!deleteBtn || !firstCell) return;
+      const id = deleteBtn.getAttribute('data-delete-athlete');
+      const strong = firstCell.querySelector('strong');
+      if (!id || !strong) return;
+      strong.style.cursor = 'pointer';
+      strong.style.textDecoration = 'underline';
+      strong.style.textDecorationColor = '#ffb000';
+      strong.title = 'Open athlete profile';
+      strong.addEventListener('click', () => { location.href = 'athlete.html?id=' + encodeURIComponent(id); });
+      const profileButton = document.createElement('button');
+      profileButton.className = 'btn secondary';
+      profileButton.textContent = 'Profile';
+      profileButton.style.marginRight = '6px';
+      profileButton.addEventListener('click', () => { location.href = 'athlete.html?id=' + encodeURIComponent(id); });
+      deleteBtn.parentNode.insertBefore(profileButton, deleteBtn);
+      row.dataset.profileEnhanced = '1';
+    });
+  }
+
+  function install(){
+    enhance();
+    const target = document.getElementById('athleteRows');
+    if (target) new MutationObserver(enhance).observe(target,{childList:true,subtree:true});
+    setInterval(enhance,1500);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
