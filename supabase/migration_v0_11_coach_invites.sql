@@ -123,13 +123,13 @@ begin
     raise exception 'This invitation must be accepted with a Coach account.';
   end if;
 
-  update public.club_coaches
+  update public.club_coaches as cc
   set linked_user_id = auth.uid(),
       status = 'linked',
       email = v_inv.email
-  where id = v_inv.coach_id
-    and club_id = v_inv.club_id
-  returning full_name into v_coach_name;
+  where cc.id = v_inv.coach_id
+    and cc.club_id = v_inv.club_id
+  returning cc.full_name into v_coach_name;
 
   if not found then
     raise exception 'The coach roster entry no longer exists.';
