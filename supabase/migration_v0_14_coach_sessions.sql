@@ -213,6 +213,32 @@ create policy "assignments_delete_assigner" on public.assignments
 for delete
 using (assigned_by = auth.uid());
 
+-- Club/owner accounts must also be able to read Coach-created assignments and
+-- sessions for athletes they own.
+drop policy if exists "assignments_select_owner_or_athlete" on public.assignments;
+create policy "assignments_select_owner_or_athlete" on public.assignments
+for select using (
+  assigned_by = auth.uid()
+  or exists (
+    select 1 from public.athletes a
+    where a.id = assignments.athlete_id
+      and (a.owner_user_id = auth.uid() or a.linked_user_id = auth.uid())
+  )
+);
+
+drop policy if exists "sessions_select_creator_or_assigned" on public.sessions;
+create policy "sessions_select_creator_or_assigned" on public.sessions
+for select using (
+  created_by = auth.uid()
+  or exists (
+    select 1
+    from public.assignments x
+    join public.athletes a on a.id = x.athlete_id
+    where x.session_id = sessions.id
+      and (a.owner_user_id = auth.uid() or a.linked_user_id = auth.uid())
+  )
+);
+
 revoke all on function public.get_my_coach_session_context() from public;
 grant execute on function public.get_my_coach_session_context() to authenticated;
 
