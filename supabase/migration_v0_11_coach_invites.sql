@@ -39,50 +39,12 @@ with check (
   )
 );
 
--- Linked Coach accounts get read-only access to their own membership.
+-- Remove any draft linked-coach SELECT policies. Coach reads use a tightly scoped RPC below,
+-- which avoids circular RLS checks between clubs and club_coaches.
 drop policy if exists "clubs_linked_coach_select" on public.clubs;
-create policy "clubs_linked_coach_select" on public.clubs
-for select
-using (
-  exists (
-    select 1 from public.club_coaches cc
-    where cc.club_id = clubs.id
-      and cc.linked_user_id = auth.uid()
-      and cc.status = 'linked'
-  )
-);
-
 drop policy if exists "club_coaches_linked_select" on public.club_coaches;
-create policy "club_coaches_linked_select" on public.club_coaches
-for select
-using (linked_user_id = auth.uid() and status = 'linked');
-
--- A linked coach can read only squads assigned to that coach.
 drop policy if exists "squads_linked_coach_select" on public.squads;
-create policy "squads_linked_coach_select" on public.squads
-for select
-using (
-  exists (
-    select 1
-    from public.squad_coaches sc
-    join public.club_coaches cc on cc.id = sc.coach_id
-    where sc.squad_id = squads.id
-      and cc.linked_user_id = auth.uid()
-      and cc.status = 'linked'
-  )
-);
-
 drop policy if exists "squad_coaches_linked_select" on public.squad_coaches;
-create policy "squad_coaches_linked_select" on public.squad_coaches
-for select
-using (
-  exists (
-    select 1 from public.club_coaches cc
-    where cc.id = squad_coaches.coach_id
-      and cc.linked_user_id = auth.uid()
-      and cc.status = 'linked'
-  )
-);
 
 -- Accepting an invite is done through this security-definer function.
 -- The random token, matching signed-in email and Coach role are all required.
@@ -188,5 +150,54 @@ begin
 end;
 $$;
 
+-- Read-only Coach overview. Returns only memberships linked to the current Coach account
+-- and only squads assigned to that coach.
+create or replace function public.get_my_coach_club()
+returns table (
+  club_id uuid,
+  club_name text,
+  coach_id uuid,
+  coach_name text,
+  coach_email text,
+  squad_id uuid,
+  squad_name text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'You must be signed in.';
+  end if;
+
+  if not exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role = 'coach'
+  ) then
+    raise exception 'This view is only available to Coach accounts.';
+  end if;
+
+  return query
+  select
+    c.id,
+    c.name,
+    cc.id,
+    cc.full_name,
+    cc.email,
+    s.id,
+    s.name
+  from public.club_coaches cc
+  join public.clubs c on c.id = cc.club_id
+  left join public.squad_coaches sc on sc.coach_id = cc.id
+  left join public.squads s on s.id = sc.squad_id
+  where cc.linked_user_id = auth.uid()
+    and cc.status = 'linked'
+  order by c.name, s.name nulls last;
+end;
+$$;
+
 revoke all on function public.accept_club_invite(uuid) from public;
 grant execute on function public.accept_club_invite(uuid) to authenticated;
+revoke all on function public.get_my_coach_club() from public;
+grant execute on function public.get_my_coach_club() to authenticated;
