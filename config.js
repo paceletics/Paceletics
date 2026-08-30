@@ -80,7 +80,7 @@ window.PACELETICS_CONFIG = {
       el.addEventListener('click',e=>{
         e.preventDefault();
         e.stopImmediatePropagation();
-        location.href='session-builder.html?v=0.8.8';
+        location.href='session-builder.html?v=0.8.9';
       },true);
     });
   }
@@ -88,7 +88,7 @@ window.PACELETICS_CONFIG = {
   else install();
 })();
 
-// v0.8.8: Date is optional in Session Builder.
+// v0.8.8+: Date is optional in Session Builder.
 (function installOptionalSessionDate(){
   if(!/session-builder\.html$/i.test(location.pathname)) return;
 
@@ -144,6 +144,116 @@ window.PACELETICS_CONFIG = {
         btn.textContent='Save & assign session';
       }
     };
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);
+  else install();
+})();
+
+// v0.8.9: Edit an existing saved session without replacing its assignments/results.
+(function installSessionEditMode(){
+  if(!/session-builder\.html$/i.test(location.pathname)) return;
+
+  function install(){
+    const saved=document.getElementById('savedSession');
+    const loadBtn=document.getElementById('loadSessionBtn');
+    const saveBtn=document.getElementById('saveBtn');
+    const eventSelect=document.getElementById('event');
+    if(!saved||!saveBtn) return;
+
+    let editingId='';
+    const updateBtn=document.createElement('button');
+    updateBtn.id='updateSessionBtn';
+    updateBtn.type='button';
+    updateBtn.className='btn secondary';
+    updateBtn.textContent='Update session';
+    updateBtn.style.width='100%';
+    updateBtn.style.marginTop='8px';
+    updateBtn.hidden=true;
+    saveBtn.insertAdjacentElement('afterend',updateBtn);
+
+    const mode=document.createElement('div');
+    mode.id='editSessionHint';
+    mode.className='hint';
+    mode.style.marginTop='7px';
+    mode.hidden=true;
+    mode.textContent='Editing saved session. Update session keeps its existing athlete assignments and results.';
+    updateBtn.insertAdjacentElement('afterend',mode);
+
+    function syncMode(){
+      if(saved.value) editingId=saved.value;
+      updateBtn.hidden=!editingId;
+      mode.hidden=!editingId;
+    }
+
+    saved.addEventListener('change',()=>{
+      editingId=saved.value||'';
+      setTimeout(syncMode,0);
+    });
+    if(loadBtn) loadBtn.addEventListener('click',()=>{
+      if(saved.value) editingId=saved.value;
+      setTimeout(syncMode,0);
+    });
+
+    // Changing event deliberately clears the setup in the builder. Keep the edit target
+    // so the coach can rebuild the session and still update the same saved record.
+    if(eventSelect) eventSelect.addEventListener('change',()=>{
+      if(!editingId) return;
+      setTimeout(()=>{
+        saved.value=editingId;
+        syncMode();
+      },0);
+    });
+
+    updateBtn.addEventListener('click',async()=>{
+      const id=editingId||saved.value;
+      const btn=updateBtn;
+      try{
+        if(!id) throw new Error('Choose a saved session to edit.');
+        const event=$('event').value;
+        const training_goal=$('goal').value;
+        const title=$('name').value.trim();
+        const main_set=$('mainSet').value;
+        const recovery=$('recovery').value||null;
+        const effort=Number($('effort').value);
+        const scheduled_date=$('date').value||null;
+        const notes=$('notes').value.trim()||null;
+
+        if(!event)throw new Error('Choose an event.');
+        if(!training_goal)throw new Error('Choose a training goal.');
+        if(!title)throw new Error('Enter a session name.');
+        if(!main_set)throw new Error('Choose the main set.');
+        if(!recovery)throw new Error('Choose recovery.');
+        if(!Number.isFinite(effort)||effort<70||effort>110)throw new Error('Choose effort between 70% and 110%.');
+
+        btn.disabled=true;
+        btn.textContent='Updating…';
+
+        let payload={title,event,main_set,recovery,effort,notes,scheduled_date,training_goal};
+        let q=await sb.from('sessions').update(payload).eq('id',id).eq('created_by',user.id).select().single();
+        if(q.error&&String(q.error.message||'').toLowerCase().includes('training_goal')){
+          payload={title,event,main_set,recovery,effort,notes:(notes?notes+'\n':'')+'Training goal: '+goalLabel[training_goal],scheduled_date};
+          q=await sb.from('sessions').update(payload).eq('id',id).eq('created_by',user.id).select().single();
+        }
+        if(q.error) throw q.error;
+
+        if(typeof state!=='undefined'&&state.sessions&&q.data){
+          state.sessions=state.sessions.map(s=>s.id===id?q.data:s);
+          if(typeof buildSavedSessions==='function'){
+            buildSavedSessions();
+            saved.value=id;
+          }
+        }
+        editingId=id;
+        syncMode();
+        alert('Session updated. Existing assignments and results have been kept.');
+      }catch(e){
+        alert(e.message||String(e));
+      }finally{
+        btn.disabled=false;
+        btn.textContent='Update session';
+      }
+    });
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);
