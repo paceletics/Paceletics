@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paceletics | Join Club</title><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#07101d">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js?v=0.9.5"></script>
+<style>
+:root{--panel:#101a2a;--line:#263651;--text:#f6f8fb;--muted:#9caac0;--orange:#ff8a00;--yellow:#ffc400;--green:#5fe3a1;--red:#ff9aaa}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:#07101d;color:var(--text);font-family:Inter,system-ui,Arial,sans-serif}.card{width:min(560px,100%);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px}.brand{display:flex;gap:11px;align-items:center;margin-bottom:18px}.logo{width:48px;height:48px;border-radius:13px;background:linear-gradient(135deg,var(--orange),var(--yellow));display:grid;place-items:center;color:#171108;font-weight:1000}.muted{color:var(--muted);font-size:12px;line-height:1.5}.btn{width:100%;border:0;border-radius:10px;padding:11px 13px;font-weight:900;cursor:pointer;margin-top:10px}.primary{background:linear-gradient(135deg,var(--orange),var(--yellow));color:#171108}.secondary{background:#1a2942;color:#fff;border:1px solid #314865}.status{padding:12px;border-radius:11px;background:#0d192b;border:1px solid #253754;margin:13px 0}.good{background:#102a21;border-color:#28563f;color:#a4ecc8}.bad{background:#321923;border-color:#643246;color:#ffc0ca}.hidden{display:none!important}
+</style></head>
+<body>
+<div class="card">
+<div class="brand"><div class="logo">P</div><div><h1 style="margin:0;font-size:24px">Join Paceletics Club</h1><div class="muted">Secure Coach invitation · Beta v0.9.5</div></div></div>
+<div id="status" class="status"><strong>Checking invitation…</strong></div>
+<div id="signedOut" class="hidden"><p class="muted">Sign in or create a Paceletics account using the email address this invitation was created for. Make sure the account type is <strong>Coach</strong>.</p><button id="loginBtn" class="btn primary">Sign in / Create account</button></div>
+<div id="ready" class="hidden"><div class="muted" id="accountLine"></div><p>This invitation will link your Coach account to the club roster.</p><button id="acceptBtn" class="btn primary">Accept Club Invitation</button><button id="wrongBtn" class="btn secondary">Use a different account</button></div>
+<div id="success" class="hidden"><button class="btn primary" onclick="location.href='dashboard.html?v=0.9.5'">Go to Dashboard</button></div>
+</div>
+<script>
+const cfg=window.PACELETICS_CONFIG||{};
+const sb=(window.supabase&&cfg.supabaseUrl&&cfg.supabasePublishableKey)?window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey):null;
+const $=id=>document.getElementById(id);
+const token=new URLSearchParams(location.search).get('token')||'';
+let user=null;
+function setStatus(text,type=''){const el=$('status');el.className='status'+(type?' '+type:'');el.innerHTML=text}
+function show(id){$(id).classList.remove('hidden')}function hide(id){$(id).classList.add('hidden')}
+async function getRole(){const q=await sb.from('profiles').select('role').eq('id',user.id).maybeSingle();if(!q.error&&q.data?.role)return q.data.role;const m=user.user_metadata||{};return m.account_type||m.role||'athlete'}
+async function init(){
+  if(!token){setStatus('<strong>Invalid invitation link.</strong><div class="muted">Ask the club to create a new coach invite.</div>','bad');return}
+  if(!sb){setStatus('<strong>Paceletics configuration did not load.</strong>','bad');return}
+  const {data,error}=await sb.auth.getSession();
+  if(error){setStatus('<strong>'+error.message+'</strong>','bad');return}
+  user=data?.session?.user||null;
+  if(!user){
+    localStorage.setItem('paceleticsPendingClubInvite',token);
+    setStatus('<strong>Sign in required</strong><div class="muted">Your invite is saved on this device while you sign in.</div>');
+    show('signedOut');
+    return;
+  }
+  const role=await getRole();
+  $('accountLine').textContent='Signed in as '+(user.email||'your account')+' · '+role+' account';
+  if(role!=='coach'){
+    setStatus('<strong>This invitation requires a Coach account.</strong><div class="muted">Sign out and use or create a Coach account with the invited email address.</div>','bad');
+    show('ready');
+    $('acceptBtn').classList.add('hidden');
+    return;
+  }
+  setStatus('<strong>Invitation ready</strong><div class="muted">Your email and Coach account will be verified securely when you accept.</div>','good');
+  show('ready');
+}
+$('loginBtn').onclick=()=>{localStorage.setItem('paceleticsPendingClubInvite',token);location.href='./?clubInvite=1'};
+$('wrongBtn').onclick=async()=>{await sb.auth.signOut();localStorage.setItem('paceleticsPendingClubInvite',token);location.href='./?clubInvite=1'};
+$('acceptBtn').onclick=async()=>{
+  const btn=$('acceptBtn');
+  try{
+    btn.disabled=true;btn.textContent='Linking account…';
+    const q=await sb.rpc('accept_club_invite',{p_token:token});
+    if(q.error)throw q.error;
+    const row=Array.isArray(q.data)?q.data[0]:q.data;
+    localStorage.removeItem('paceleticsPendingClubInvite');
+    hide('ready');show('success');
+    setStatus('<strong>Club joined successfully</strong><div class="muted">'+(row?.coach_name||'Your Coach account')+' is now linked to '+(row?.club_name||'the club')+'.</div>','good');
+  }catch(e){
+    const text=String(e?.message||e||'Could not accept invitation.');
+    const missing=/accept_club_invite|club_invites/i.test(text)&&/schema cache|function|does not exist|could not find/i.test(text);
+    setStatus('<strong>'+(missing?'Coach invite database update required':text)+'</strong>'+(missing?'<div class="muted">The club needs to run migration_v0_11_coach_invites.sql.</div>':''),'bad');
+  }finally{btn.disabled=false;btn.textContent='Accept Club Invitation'}
+};
+window.addEventListener('DOMContentLoaded',init);
+</script></body></html>
