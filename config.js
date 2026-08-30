@@ -71,7 +71,7 @@ window.PACELETICS_CONFIG = {
   else install();
 })();
 
-// Open the native v0.8.4 Session Builder from the dashboard.
+// Open the native v0.8.5 Session Builder from the dashboard.
 (function installSessionBuilderLinks(){
   function install(){
     ['buildBtn','buildInline'].forEach(id=>{
@@ -80,7 +80,7 @@ window.PACELETICS_CONFIG = {
       el.addEventListener('click',e=>{
         e.preventDefault();
         e.stopImmediatePropagation();
-        location.href='session-builder.html?v=0.8.4';
+        location.href='session-builder.html?v=0.8.5';
       },true);
     });
   }
