@@ -103,17 +103,17 @@ window.PACELETICS_CONFIG = {
   else install();
 })();
 
-// Add the detailed Performance Dashboard to the existing Stats view.
+// Fallback only: add Performance Dashboard card if an older dashboard does not already include it.
 (function installPerformanceDashboardLink(){
   function install(){
     const grid=document.querySelector('#view-stats .grid');
-    if(!grid||document.getElementById('performanceDashboardCard'))return;
+    if(!grid||document.getElementById('performanceDashboardCard')||grid.querySelector('button[onclick*="performance.html"]'))return;
     const card=document.createElement('div');
     card.id='performanceDashboardCard';
     card.className='card span12';
     card.innerHTML='<div class="row"><div><h3 style="margin:0 0 4px">Performance Dashboard</h3><div class="muted">Compare like-for-like rep distances, pace trends, RPE and consistency.</div></div><button id="openPerformanceBtn" class="btn primary" type="button">Open Performance</button></div>';
     grid.insertBefore(card,grid.firstChild);
-    document.getElementById('openPerformanceBtn').onclick=()=>{location.href='performance.html?v=0.9.1'};
+    document.getElementById('openPerformanceBtn').onclick=()=>{location.href='performance.html?v=0.9.2'};
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);
   else install();
