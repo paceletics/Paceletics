@@ -57,14 +57,14 @@ window.PACELETICS_CONFIG = {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
 
-// Open the current Session Builder from the dashboard.
+// Open the correct Session Builder from the dashboard.
 (function installSessionBuilderLinks(){
   function install(){
     ['buildBtn','buildInline'].forEach(id=>{
       const el=document.getElementById(id);if(!el)return;
       el.addEventListener('click',e=>{
         e.preventDefault();e.stopImmediatePropagation();
-        location.href='session-builder.html?v=0.8.9';
+        location.href=window.PACELETICS_ACCOUNT_ROLE==='coach'?'coach-session.html?v=0.9.8':'session-builder.html?v=0.8.9';
       },true);
     });
   }
@@ -97,7 +97,7 @@ window.PACELETICS_CONFIG = {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
 
-// v0.9.6: Role-aware dashboard controls, including Club Management and Coach My Club.
+// v0.9.8: Role-aware dashboard controls, including Club Management and Coach My Club.
 (function installRoleAwareDashboard(){
   if(!/dashboard\.html$/i.test(location.pathname))return;
   const validRoles=['athlete','coach','club'];
@@ -131,7 +131,7 @@ window.PACELETICS_CONFIG = {
       const sideBrand=document.querySelector('.side .brand .muted');
       if(sideBrand)sideBrand.textContent=label+' Dashboard · Cloud';
       const version=document.querySelector('.version');
-      if(version)version.innerHTML='Beta v0.9.6<br>Plan. Train. Improve.';
+      if(version)version.innerHTML='Beta v0.9.8<br>Plan. Train. Improve.';
 
       const banner=document.querySelector('.banner');
       if(banner&&!document.getElementById('accountRoleLine')){
@@ -146,7 +146,7 @@ window.PACELETICS_CONFIG = {
         const b=document.createElement('button');
         b.id='clubManagementBtn';b.className='btn secondary';b.type='button';
         b.textContent='Club Management';
-        b.onclick=()=>location.href='club.html?v=0.9.6';
+        b.onclick=()=>location.href='club.html?v=0.9.8';
         const logout=document.getElementById('logoutBtn');
         actions.insertBefore(b,logout||null);
       }
@@ -154,7 +154,7 @@ window.PACELETICS_CONFIG = {
         const b=document.createElement('button');
         b.id='myClubBtn';b.className='btn secondary';b.type='button';
         b.textContent='My Club';
-        b.onclick=()=>location.href='coach-club.html?v=0.9.6';
+        b.onclick=()=>location.href='coach-club.html?v=0.9.8';
         const logout=document.getElementById('logoutBtn');
         actions.insertBefore(b,logout||null);
       }
