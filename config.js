@@ -97,7 +97,7 @@ window.PACELETICS_CONFIG = {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
 
-// v0.9.4: Role-aware dashboard controls, including Club Management.
+// v0.9.6: Role-aware dashboard controls, including Club Management and Coach My Club.
 (function installRoleAwareDashboard(){
   if(!/dashboard\.html$/i.test(location.pathname))return;
   const validRoles=['athlete','coach','club'];
@@ -131,7 +131,7 @@ window.PACELETICS_CONFIG = {
       const sideBrand=document.querySelector('.side .brand .muted');
       if(sideBrand)sideBrand.textContent=label+' Dashboard · Cloud';
       const version=document.querySelector('.version');
-      if(version)version.innerHTML='Beta v0.9.4<br>Plan. Train. Improve.';
+      if(version)version.innerHTML='Beta v0.9.6<br>Plan. Train. Improve.';
 
       const banner=document.querySelector('.banner');
       if(banner&&!document.getElementById('accountRoleLine')){
@@ -146,7 +146,15 @@ window.PACELETICS_CONFIG = {
         const b=document.createElement('button');
         b.id='clubManagementBtn';b.className='btn secondary';b.type='button';
         b.textContent='Club Management';
-        b.onclick=()=>location.href='club.html?v=0.9.4';
+        b.onclick=()=>location.href='club.html?v=0.9.6';
+        const logout=document.getElementById('logoutBtn');
+        actions.insertBefore(b,logout||null);
+      }
+      if(role==='coach'&&actions&&!document.getElementById('myClubBtn')){
+        const b=document.createElement('button');
+        b.id='myClubBtn';b.className='btn secondary';b.type='button';
+        b.textContent='My Club';
+        b.onclick=()=>location.href='coach-club.html?v=0.9.6';
         const logout=document.getElementById('logoutBtn');
         actions.insertBefore(b,logout||null);
       }
