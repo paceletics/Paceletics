@@ -1,5 +1,6 @@
 -- Paceletics migration v0.10
 -- Club management: club profile, coach roster, squads and coach-to-squad assignments.
+-- First release is intentionally club-owner only. Coach account linking comes later.
 
 create table if not exists public.clubs (
   id uuid primary key default gen_random_uuid(),
@@ -44,25 +45,20 @@ alter table public.club_coaches enable row level security;
 alter table public.squads enable row level security;
 alter table public.squad_coaches enable row level security;
 
--- Club record: owned by the club account.
+-- Clean up any earlier draft policies if this migration is re-run.
+drop policy if exists "clubs_linked_coach_select" on public.clubs;
+drop policy if exists "club_coaches_linked_select" on public.club_coaches;
+drop policy if exists "squads_linked_coach_select" on public.squads;
+drop policy if exists "squad_coaches_linked_select" on public.squad_coaches;
+
+-- Club record is managed only by its owning Club account.
 drop policy if exists "clubs_owner_all" on public.clubs;
 create policy "clubs_owner_all" on public.clubs
 for all
 using (owner_user_id = auth.uid())
 with check (owner_user_id = auth.uid());
 
--- A linked coach can read the club they belong to.
-drop policy if exists "clubs_linked_coach_select" on public.clubs;
-create policy "clubs_linked_coach_select" on public.clubs
-for select
-using (
-  exists (
-    select 1 from public.club_coaches c
-    where c.club_id = clubs.id and c.linked_user_id = auth.uid()
-  )
-);
-
--- Club owner manages the coach roster; a linked coach may read their own roster entry.
+-- Coach roster follows club ownership.
 drop policy if exists "club_coaches_owner_all" on public.club_coaches;
 create policy "club_coaches_owner_all" on public.club_coaches
 for all
@@ -79,12 +75,7 @@ with check (
   )
 );
 
-drop policy if exists "club_coaches_linked_select" on public.club_coaches;
-create policy "club_coaches_linked_select" on public.club_coaches
-for select
-using (linked_user_id = auth.uid());
-
--- Club owner manages squads; linked coaches can read squads in their club.
+-- Squads follow club ownership.
 drop policy if exists "squads_owner_all" on public.squads;
 create policy "squads_owner_all" on public.squads
 for all
@@ -101,17 +92,7 @@ with check (
   )
 );
 
-drop policy if exists "squads_linked_coach_select" on public.squads;
-create policy "squads_linked_coach_select" on public.squads
-for select
-using (
-  exists (
-    select 1 from public.club_coaches cc
-    where cc.club_id = squads.club_id and cc.linked_user_id = auth.uid()
-  )
-);
-
--- Club owner manages coach-to-squad assignments. Linked coaches can read their assignments.
+-- Coach-to-squad assignments follow club ownership.
 drop policy if exists "squad_coaches_owner_all" on public.squad_coaches;
 create policy "squad_coaches_owner_all" on public.squad_coaches
 for all
@@ -129,15 +110,5 @@ with check (
     from public.squads s
     join public.clubs c on c.id = s.club_id
     where s.id = squad_coaches.squad_id and c.owner_user_id = auth.uid()
-  )
-);
-
-drop policy if exists "squad_coaches_linked_select" on public.squad_coaches;
-create policy "squad_coaches_linked_select" on public.squad_coaches
-for select
-using (
-  exists (
-    select 1 from public.club_coaches cc
-    where cc.id = squad_coaches.coach_id and cc.linked_user_id = auth.uid()
   )
 );
