@@ -119,6 +119,107 @@ window.PACELETICS_CONFIG = {
   else install();
 })();
 
+// v0.9.3: Role-aware dashboard presentation and controls.
+(function installRoleAwareDashboard(){
+  if(!/dashboard\.html$/i.test(location.pathname)) return;
+
+  const validRoles=['athlete','coach','club'];
+  const roleTitle={athlete:'Athlete',coach:'Coach',club:'Club'};
+
+  function hide(el){if(el)el.style.display='none'}
+  function show(el){if(el)el.style.display=''}
+
+  async function applyRole(){
+    try{
+      const cfg=window.PACELETICS_CONFIG||{};
+      if(!window.supabase||!cfg.supabaseUrl||!cfg.supabasePublishableKey)return;
+      const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey);
+      const {data:sessionData}=await client.auth.getSession();
+      const authUser=sessionData&&sessionData.session&&sessionData.session.user;
+      if(!authUser)return;
+
+      let profile=null;
+      try{
+        const q=await client.from('profiles').select('id,full_name,role').eq('id',authUser.id).maybeSingle();
+        if(!q.error)profile=q.data||null;
+      }catch(e){}
+
+      const metadata=authUser.user_metadata||{};
+      let role=(profile&&profile.role)||metadata.account_type||metadata.role||'athlete';
+      if(!validRoles.includes(role))role='athlete';
+      const displayName=(profile&&profile.full_name)||metadata.full_name||authUser.email||'';
+      const label=roleTitle[role]||'Athlete';
+
+      document.documentElement.dataset.accountRole=role;
+      window.PACELETICS_ACCOUNT_ROLE=role;
+
+      const sideBrand=document.querySelector('.side .brand .muted');
+      if(sideBrand)sideBrand.textContent=label+' Dashboard · Cloud';
+
+      const banner=document.querySelector('.banner');
+      if(banner&&!document.getElementById('accountRoleLine')){
+        const line=document.createElement('div');
+        line.id='accountRoleLine';
+        line.className='muted';
+        line.style.marginTop='5px';
+        line.textContent=(displayName?displayName+' · ':'')+label+' account';
+        banner.appendChild(line);
+      }
+
+      const version=document.querySelector('.version');
+      if(version)version.innerHTML='Beta v0.9.3<br>Plan. Train. Improve.';
+
+      if(role==='athlete'){
+        ['addAthleteBtn','buildBtn','addAthleteInline','buildInline'].forEach(id=>hide(document.getElementById(id)));
+
+        document.querySelectorAll('[data-view="athletes"]').forEach(hide);
+
+        const athleteSection=document.getElementById('view-athletes');
+        if(athleteSection)athleteSection.classList.add('hidden');
+
+        const sessionsHelp=document.querySelector('#view-sessions .muted');
+        if(sessionsHelp)sessionsHelp.textContent='Your assigned training sessions.';
+        const resultsHelp=document.querySelector('#view-results .muted');
+        if(resultsHelp)resultsHelp.textContent='Log and review your training results.';
+
+        const removeDeleteButtons=()=>document.querySelectorAll('[data-delete-athlete]').forEach(hide);
+        removeDeleteButtons();
+        const athleteRows=document.getElementById('athleteRows');
+        if(athleteRows)new MutationObserver(removeDeleteButtons).observe(athleteRows,{childList:true,subtree:true});
+
+        try{
+          const aq=await client.from('athletes').select('id').eq('linked_user_id',authUser.id).limit(1);
+          const linked=aq.data&&aq.data[0];
+          const actions=document.querySelector('.top .actions');
+          if(linked&&actions&&!document.getElementById('myProfileBtn')){
+            const b=document.createElement('button');
+            b.id='myProfileBtn';
+            b.className='btn secondary';
+            b.textContent='My Profile';
+            b.onclick=()=>{location.href='athlete.html?id='+encodeURIComponent(linked.id)};
+            const logout=document.getElementById('logoutBtn');
+            actions.insertBefore(b,logout||null);
+          }else if(!linked&&banner&&!document.getElementById('athleteLinkNotice')){
+            const note=document.createElement('div');
+            note.id='athleteLinkNotice';
+            note.className='muted';
+            note.style.marginTop='5px';
+            note.textContent='This athlete account is not linked to an athlete profile yet.';
+            banner.appendChild(note);
+          }
+        }catch(e){}
+      }else{
+        ['addAthleteBtn','buildBtn','addAthleteInline','buildInline'].forEach(id=>show(document.getElementById(id)));
+      }
+    }catch(e){
+      console.warn('Paceletics role display could not be applied.',e);
+    }
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyRole);
+  else applyRole();
+})();
+
 // v0.8.8+: Date is optional in Session Builder.
 (function installOptionalSessionDate(){
   if(!/session-builder\.html$/i.test(location.pathname)) return;
