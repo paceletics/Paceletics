@@ -260,3 +260,80 @@ window.PACELETICS_CONFIG = {
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
+
+// v0.9.11: Coach dashboard polish. Upcoming shows planned work only and Sessions shows status.
+(function installCoachDashboardPolish(){
+  if(!/dashboard\.html$/i.test(location.pathname))return;
+  const cfg=window.PACELETICS_CONFIG||{};
+  if(!window.supabase||!cfg.supabaseUrl||!cfg.supabasePublishableKey)return;
+  const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey);
+  let rows=[];
+  let timer=null;
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const today=()=>new Date().toISOString().slice(0,10);
+
+  function groupedSessions(){
+    const map=new Map();
+    rows.forEach(r=>{
+      if(!r?.session_id)return;
+      let x=map.get(r.session_id);
+      if(!x){x={id:r.session_id,title:r.title,event:r.event,main_set:r.main_set,recovery:r.recovery,effort:r.effort,scheduled_date:r.scheduled_date,statuses:[],count:0,planned:0};map.set(r.session_id,x)}
+      x.count++;
+      x.statuses.push(r.status||'planned');
+      if(r.status==='planned')x.planned++;
+    });
+    return [...map.values()].map(x=>{
+      const unique=[...new Set(x.statuses)];
+      x.status=unique.length===1?unique[0]:(unique.includes('planned')?'mixed':unique.join(' / '));
+      return x;
+    });
+  }
+
+  function patch(){
+    if(!rows.length)return;
+    const sessions=groupedSessions();
+    const upcoming=document.getElementById('upcoming');
+    if(upcoming){
+      const planned=sessions.filter(s=>s.planned>0&&(!s.scheduled_date||s.scheduled_date>=today())).sort((a,b)=>String(a.scheduled_date||'9999').localeCompare(String(b.scheduled_date||'9999'))).slice(0,8);
+      const html=planned.length?planned.map(s=>`<div class="item"><div class="row"><strong>${esc(s.title)}</strong><span class="badge">${s.effort||'—'}%</span></div><div class="muted">${esc(s.scheduled_date||'No date')} · ${s.planned} planned</div><div>${esc(s.main_set||'—')} · ${esc(s.recovery||'No recovery')}</div></div>`).join(''):'<div class="item muted">No planned upcoming sessions.</div>';
+      if(upcoming.innerHTML!==html)upcoming.innerHTML=html;
+    }
+
+    const table=document.querySelector('#view-sessions table');
+    const head=table?.querySelector('thead tr');
+    if(head&&!head.querySelector('[data-status-head]')){
+      const th=document.createElement('th');th.dataset.statusHead='1';th.textContent='Status';head.appendChild(th);
+    }
+    const body=document.getElementById('sessionRows');
+    if(body){
+      const ordered=[...sessions].sort((a,b)=>String(a.scheduled_date||'9999').localeCompare(String(b.scheduled_date||'9999'))||String(a.title||'').localeCompare(String(b.title||'')));
+      const html=ordered.length?ordered.map(s=>{const cls=s.status==='completed'?'badge goodBadge':'badge';const label=s.status==='mixed'?'Mixed':s.status.charAt(0).toUpperCase()+s.status.slice(1);return`<tr><td>${esc(s.scheduled_date||'—')}</td><td><strong>${esc(s.title||'Session')}</strong></td><td>${esc(s.event||'—')}</td><td>${esc(s.main_set||'—')}</td><td>${s.effort||'—'}%</td><td>${s.count}</td><td><span class="${cls}">${esc(label)}</span></td></tr>`}).join(''):'<tr><td colspan="7" class="muted">No sessions yet.</td></tr>';
+      if(body.innerHTML!==html)body.innerHTML=html;
+    }
+
+    const version=document.querySelector('.buildVersion');
+    if(version)version.innerHTML='Beta v0.9.11<br>Plan. Train. Improve.';
+    const myClub=document.getElementById('myClubBtn');
+    if(myClub)myClub.onclick=()=>location.href='coach-club.html?v=0.9.11';
+  }
+
+  function schedulePatch(){clearTimeout(timer);timer=setTimeout(patch,25)}
+
+  async function install(){
+    try{
+      const {data}=await client.auth.getSession();
+      const user=data?.session?.user;if(!user)return;
+      const p=await client.from('profiles').select('role').eq('id',user.id).maybeSingle();
+      if(p.data?.role!=='coach')return;
+      const q=await client.rpc('get_my_coach_result_context');
+      if(q.error)return;
+      rows=Array.isArray(q.data?.assignments)?q.data.assignments:[];
+      patch();
+      ['upcoming','sessionRows'].forEach(id=>{const el=document.getElementById(id);if(el)new MutationObserver(schedulePatch).observe(el,{childList:true,subtree:true})});
+      const refresh=document.getElementById('refreshAction');
+      if(refresh)refresh.addEventListener('click',async()=>{setTimeout(async()=>{const fresh=await client.rpc('get_my_coach_result_context');if(!fresh.error){rows=Array.isArray(fresh.data?.assignments)?fresh.data.assignments:[];patch()}},350)});
+    }catch(e){console.warn('Coach dashboard polish could not be applied.',e)}
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+})();
