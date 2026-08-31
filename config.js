@@ -57,21 +57,21 @@ window.PACELETICS_CONFIG = {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
 
-// Open the correct Session Builder from the dashboard.
+// Open the correct Session Builder from older dashboard markup when present.
 (function installSessionBuilderLinks(){
   function install(){
     ['buildBtn','buildInline'].forEach(id=>{
       const el=document.getElementById(id);if(!el)return;
       el.addEventListener('click',e=>{
         e.preventDefault();e.stopImmediatePropagation();
-        location.href=window.PACELETICS_ACCOUNT_ROLE==='coach'?'coach-session.html?v=0.9.8':'session-builder.html?v=0.8.9';
+        location.href=window.PACELETICS_ACCOUNT_ROLE==='coach'?'coach-session.html?v=0.9.13':'session-builder.html?v=0.8.9';
       },true);
     });
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
 
-// Open the friendly result-entry page from the dashboard.
+// Open the friendly result-entry page from older dashboard markup when present.
 (function installResultEntryLink(){
   function install(){
     const el=document.getElementById('logResultBtn');if(!el)return;
@@ -97,7 +97,7 @@ window.PACELETICS_CONFIG = {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
 
-// v0.9.8: Role-aware dashboard controls, including Club Management and Coach My Club.
+// v0.9.13: Role-aware dashboard controls for legacy/current dashboard markup.
 (function installRoleAwareDashboard(){
   if(!/dashboard\.html$/i.test(location.pathname))return;
   const validRoles=['athlete','coach','club'];
@@ -128,10 +128,15 @@ window.PACELETICS_CONFIG = {
       document.documentElement.dataset.accountRole=role;
       window.PACELETICS_ACCOUNT_ROLE=role;
 
+      if(role==='athlete'){
+        location.replace('athlete-dashboard.html?v=0.9.13');
+        return;
+      }
+
       const sideBrand=document.querySelector('.side .brand .muted');
       if(sideBrand)sideBrand.textContent=label+' Dashboard · Cloud';
       const version=document.querySelector('.version');
-      if(version)version.innerHTML='Beta v0.9.8<br>Plan. Train. Improve.';
+      if(version)version.innerHTML='Beta v0.9.13<br>Plan. Train. Improve.';
 
       const banner=document.querySelector('.banner');
       if(banner&&!document.getElementById('accountRoleLine')){
@@ -146,7 +151,15 @@ window.PACELETICS_CONFIG = {
         const b=document.createElement('button');
         b.id='clubManagementBtn';b.className='btn secondary';b.type='button';
         b.textContent='Club Management';
-        b.onclick=()=>location.href='club.html?v=0.9.8';
+        b.onclick=()=>location.href='club.html?v=0.9.13';
+        const logout=document.getElementById('logoutBtn');
+        actions.insertBefore(b,logout||null);
+      }
+      if(role==='club'&&actions&&!document.getElementById('clubReportsBtn')){
+        const b=document.createElement('button');
+        b.id='clubReportsBtn';b.className='btn secondary';b.type='button';
+        b.textContent='Club Reports';
+        b.onclick=()=>location.href='club-report.html?v=0.9.13';
         const logout=document.getElementById('logoutBtn');
         actions.insertBefore(b,logout||null);
       }
@@ -154,38 +167,12 @@ window.PACELETICS_CONFIG = {
         const b=document.createElement('button');
         b.id='myClubBtn';b.className='btn secondary';b.type='button';
         b.textContent='My Club';
-        b.onclick=()=>location.href='coach-club.html?v=0.9.8';
+        b.onclick=()=>location.href='coach-club.html?v=0.9.13';
         const logout=document.getElementById('logoutBtn');
         actions.insertBefore(b,logout||null);
       }
 
-      if(role==='athlete'){
-        ['addAthleteBtn','buildBtn','addAthleteInline','buildInline'].forEach(id=>hide(document.getElementById(id)));
-        document.querySelectorAll('[data-view="athletes"]').forEach(hide);
-        document.getElementById('view-athletes')?.classList.add('hidden');
-        const sessionsHelp=document.querySelector('#view-sessions .muted');
-        if(sessionsHelp)sessionsHelp.textContent='Your assigned training sessions.';
-        const resultsHelp=document.querySelector('#view-results .muted');
-        if(resultsHelp)resultsHelp.textContent='Log and review your training results.';
-        const removeDelete=()=>document.querySelectorAll('[data-delete-athlete]').forEach(hide);
-        removeDelete();
-        const rows=document.getElementById('athleteRows');
-        if(rows)new MutationObserver(removeDelete).observe(rows,{childList:true,subtree:true});
-        try{
-          const aq=await client.from('athletes').select('id').eq('linked_user_id',authUser.id).limit(1);
-          const linked=aq.data?.[0];
-          if(linked&&actions&&!document.getElementById('myProfileBtn')){
-            const b=document.createElement('button');b.id='myProfileBtn';b.className='btn secondary';b.textContent='My Profile';
-            b.onclick=()=>location.href='athlete.html?id='+encodeURIComponent(linked.id);
-            actions.insertBefore(b,document.getElementById('logoutBtn')||null);
-          }else if(!linked&&banner&&!document.getElementById('athleteLinkNotice')){
-            const note=document.createElement('div');note.id='athleteLinkNotice';note.className='muted';note.style.marginTop='5px';
-            note.textContent='This athlete account is not linked to an athlete profile yet.';banner.appendChild(note);
-          }
-        }catch(e){}
-      }else{
-        ['addAthleteBtn','buildBtn','addAthleteInline','buildInline'].forEach(id=>show(document.getElementById(id)));
-      }
+      ['addAthleteBtn','buildBtn','addAthleteInline','buildInline'].forEach(id=>show(document.getElementById(id)));
     }catch(e){console.warn('Paceletics role display could not be applied.',e)}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyRole);else applyRole();
@@ -219,7 +206,7 @@ window.PACELETICS_CONFIG = {
         const rows=athletes.map(a=>({session_id:ins.data.id,athlete_id:a.id,assigned_by:user.id,status:'planned'}));
         const q=await sb.from('assignments').insert(rows);
         if(q.error){await sb.from('sessions').delete().eq('id',ins.data.id);throw q.error}
-        location.href='dashboard.html';
+        location.href='dashboard.html?v=0.9.13';
       }catch(e){alert(e.message||String(e))}finally{btn.disabled=false;btn.textContent='Save & assign session'}
     };
   }
@@ -261,7 +248,7 @@ window.PACELETICS_CONFIG = {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
 
-// v0.9.11: Coach dashboard polish. Upcoming shows planned work only and Sessions shows status.
+// v0.9.13: Coach dashboard polish. Upcoming shows planned work only and Sessions shows status.
 (function installCoachDashboardPolish(){
   if(!/dashboard\.html$/i.test(location.pathname))return;
   const cfg=window.PACELETICS_CONFIG||{};
@@ -269,7 +256,7 @@ window.PACELETICS_CONFIG = {
   const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey);
   let rows=[];
   let timer=null;
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const today=()=>new Date().toISOString().slice(0,10);
 
   function groupedSessions(){
@@ -312,9 +299,9 @@ window.PACELETICS_CONFIG = {
     }
 
     const version=document.querySelector('.buildVersion');
-    if(version)version.innerHTML='Beta v0.9.11<br>Plan. Train. Improve.';
+    if(version)version.innerHTML='Beta v0.9.13<br>Plan. Train. Improve.';
     const myClub=document.getElementById('myClubBtn');
-    if(myClub)myClub.onclick=()=>location.href='coach-club.html?v=0.9.11';
+    if(myClub)myClub.onclick=()=>location.href='coach-club.html?v=0.9.13';
   }
 
   function schedulePatch(){clearTimeout(timer);timer=setTimeout(patch,25)}
