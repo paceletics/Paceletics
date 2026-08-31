@@ -324,3 +324,27 @@ window.PACELETICS_CONFIG = {
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
+
+// Paceletics modern UI preview. Visual only; application logic is untouched.
+(function installPaceleticsModernUI(){
+  const page=(location.pathname.split('/').pop()||'index.html').toLowerCase();
+  function apply(){
+    if(!document.body)return;
+    document.body.classList.add('paceletics-modern');
+    if(page==='index.html'||page==='')document.body.classList.add('paceletics-login');
+    if(page==='dashboard.html')document.body.classList.add('paceletics-dashboard');
+    document.querySelectorAll('.logo').forEach(logo=>{
+      if(logo.dataset.modernLogo==='1')return;
+      if((logo.textContent||'').trim()==='P')logo.innerHTML='<span class="pace-mark">P</span>';
+      logo.dataset.modernLogo='1';
+    });
+    if(!document.getElementById('paceleticsModernCss')){
+      const link=document.createElement('link');
+      link.id='paceleticsModernCss';
+      link.rel='stylesheet';
+      link.href='paceletics-modern.css?v=1.0.0';
+      document.head.appendChild(link);
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply);else apply();
+})();
