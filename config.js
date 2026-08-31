@@ -342,9 +342,25 @@ window.PACELETICS_CONFIG = {
       const link=document.createElement('link');
       link.id='paceleticsModernCss';
       link.rel='stylesheet';
-      link.href='paceletics-modern.css?v=1.0.0';
+      link.href='paceletics-modern.css?v=2.0.0';
       document.head.appendChild(link);
     }
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply);else apply();
+})();
+
+// v0.9.15: Load the shared Paceletics app shell on workflow pages.
+(function installPaceleticsWorkflowShell(){
+  const page=(location.pathname.split('/').pop()||'').toLowerCase();
+  const pages=new Set([
+    'club.html','club-report.html','club-athletes.html','athlete.html',
+    'session-builder.html','result-entry.html','performance.html',
+    'coach-club.html','coach-session.html','coach-result-entry.html','coach-athlete.html',
+    'athlete-result-entry.html'
+  ]);
+  if(!pages.has(page))return;
+  if(document.querySelector('script[src*="paceletics-shell.js"]'))return;
+  const script=document.createElement('script');
+  script.src='paceletics-shell.js?v=1.0.0';
+  document.head.appendChild(script);
 })();
