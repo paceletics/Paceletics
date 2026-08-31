@@ -1,4 +1,4 @@
-/* Paceletics workflow shell v1.0 */
+/* Paceletics workflow shell v1.1 */
 (function(){
   const page=(location.pathname.split('/').pop()||'').toLowerCase();
   const excluded=new Set(['','index.html','dashboard.html','athlete-dashboard.html','join-athlete.html','join-club.html','404.html']);
@@ -55,6 +55,62 @@
     return navByRole[role].map(([label,href,symbol,target])=>`<a href="${href}" class="${activeFor(target)?'active':''}">${mobile?'':icon(symbol)}${label}</a>`).join('');
   }
 
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+  async function installClubAthleteOffboarding(){
+    if(page!=='club.html'||document.getElementById('clubAthleteOffboarding'))return;
+    const grid=document.querySelector('#app .grid');
+    if(!grid)return;
+
+    const card=document.createElement('section');
+    card.id='clubAthleteOffboarding';
+    card.className='card span12';
+    card.innerHTML=`<div class="row"><div><h3 style="margin:0">Club athletes</h3><div class="muted" style="margin-top:4px">Remove an athlete when they leave the club. Their login and squad access are stopped immediately, while historical PBs and completed results are preserved.</div></div><span class="badge">Secure offboarding</span></div><div id="clubOffboardList" class="list"><div class="empty">Loading active athletes…</div></div>`;
+    grid.appendChild(card);
+
+    const list=document.getElementById('clubOffboardList');
+    const cfg=window.PACELETICS_CONFIG||{};
+    if(!window.supabase||!cfg.supabaseUrl||!cfg.supabasePublishableKey){
+      list.innerHTML='<div class="empty">Supabase configuration did not load.</div>';
+      return;
+    }
+
+    const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey);
+    try{
+      const {data:session}=await client.auth.getSession();
+      if(!session?.session?.user)return;
+      const q=await client.from('athletes').select('id,full_name,group_name,primary_event,linked_user_id,is_active').eq('is_active',true).order('full_name');
+      if(q.error){
+        const missing=/is_active|schema cache|column/i.test(String(q.error.message||''));
+        list.innerHTML=`<div class="empty">${missing?'Run migration_v0_18_athlete_offboarding.sql in Supabase to enable safe athlete removal.':esc(q.error.message||'Could not load athletes.')}</div>`;
+        return;
+      }
+      const athletes=q.data||[];
+      list.innerHTML=athletes.length?athletes.map(a=>`<div class="item"><div class="row"><div><strong>${esc(a.full_name)}</strong><div class="muted">${[a.group_name,a.primary_event].filter(Boolean).map(esc).join(' · ')||'Athlete'} · ${a.linked_user_id?'Athlete account linked':'No Athlete login linked'}</div></div><button class="btn danger" type="button" data-offboard-athlete="${a.id}" data-athlete-name="${esc(a.full_name)}">Remove from Club</button></div></div>`).join(''):'<div class="empty">No active athletes in this club.</div>';
+
+      list.querySelectorAll('[data-offboard-athlete]').forEach(btn=>{
+        btn.addEventListener('click',async()=>{
+          const name=btn.dataset.athleteName||'this athlete';
+          const ok=confirm(`Remove ${name} from the club?\n\nThis will immediately stop their Athlete account access, remove squad access and cancel planned sessions. Completed results and PB history will be kept.`);
+          if(!ok)return;
+          const original=btn.textContent;
+          btn.disabled=true;btn.textContent='Removing…';
+          try{
+            const r=await client.rpc('offboard_club_athlete',{p_athlete_id:btn.dataset.offboardAthlete});
+            if(r.error)throw r.error;
+            alert(`${name} has been removed from the club. Their access has been stopped and historical data has been preserved.`);
+            location.reload();
+          }catch(e){
+            alert(e.message||String(e));
+            btn.disabled=false;btn.textContent=original;
+          }
+        });
+      });
+    }catch(e){
+      list.innerHTML=`<div class="empty">${esc(e.message||String(e))}</div>`;
+    }
+  }
+
   function install(){
     if(document.body?.dataset?.paceShell==='1')return;
     const wrap=document.querySelector('body > .wrap');
@@ -79,6 +135,7 @@
     }
 
     const mobile=document.createElement('nav');mobile.className='workflowMobile';mobile.innerHTML=navHtml(true);document.body.appendChild(mobile);
+    installClubAthleteOffboarding();
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
