@@ -147,3 +147,68 @@ function paceleticsPage(){
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();
 })();
+
+// Brief descriptions when desktop users hover or keyboard-focus navigation tabs.
+(function installNavigationDescriptions(){
+  const descriptions={
+    dashboard:'Overview of training, results and progress.',
+    athletes:'View athlete profiles, events and personal bests.',
+    sessions:'Create, assign and review training sessions.',
+    calendar:'See scheduled and upcoming training.',
+    results:'Review completed performances and logged results.',
+    stats:'View training totals, trends and athlete activity.',
+    training:'View your planned and completed sessions.',
+    pbs:'View and update your personal bests.',
+    'club management':'Manage coaches, squads and athlete access.',
+    'club reports':'Review club-wide participation and performance.',
+    'athlete accounts':'Manage secure athlete account links.',
+    performance:'Track athlete trends and progression.',
+    'build session':'Create and assign a training session.',
+    'log result':'Record completed training and performance data.',
+    'my club':'View your assigned squads, athletes and club activity.',
+    'my dashboard':'View your training, results and progress.',
+    'beta feedback':'Report a bug, confusing feature or new idea.'
+  };
+  let tip=null,current=null,hideTimer=null;
+  function ensureTip(){
+    if(tip)return tip;
+    tip=document.createElement('div');tip.id='paceleticsNavTooltip';tip.setAttribute('role','tooltip');
+    Object.assign(tip.style,{position:'fixed',zIndex:'10000',maxWidth:'230px',padding:'9px 11px',border:'1px solid #34506d',borderRadius:'9px',background:'#0b1726',color:'#dbe6f2',font:'700 11px/1.4 Inter,system-ui,sans-serif',boxShadow:'0 12px 34px rgba(0,0,0,.38)',opacity:'0',visibility:'hidden',pointerEvents:'none',transition:'opacity .14s ease, visibility .14s ease'});
+    document.body.appendChild(tip);return tip;
+  }
+  function keyFor(el){
+    if(el.dataset?.view)return el.dataset.view.toLowerCase();
+    const text=(el.textContent||'').replace(/[⌂◆◎▥↗＋✓]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+    return text;
+  }
+  function descriptionFor(el){return descriptions[keyFor(el)]||''}
+  function position(el){
+    const t=ensureTip(),r=el.getBoundingClientRect();
+    t.style.left='0px';t.style.top='0px';t.style.visibility='hidden';t.style.opacity='0';
+    requestAnimationFrame(()=>{
+      const tr=t.getBoundingClientRect();let left=r.right+12;
+      if(left+tr.width>window.innerWidth-10)left=Math.max(10,r.left-tr.width-12);
+      let top=r.top+(r.height-tr.height)/2;top=Math.max(10,Math.min(top,window.innerHeight-tr.height-10));
+      t.style.left=Math.round(left)+'px';t.style.top=Math.round(top)+'px';t.style.visibility='visible';t.style.opacity='1';
+    });
+  }
+  function show(el){
+    if(!matchMedia('(hover:hover) and (pointer:fine)').matches)return;
+    const text=descriptionFor(el);if(!text)return;clearTimeout(hideTimer);current=el;const t=ensureTip();t.textContent=text;el.setAttribute('aria-describedby',t.id);position(el);
+  }
+  function hide(el){
+    hideTimer=setTimeout(()=>{if(el&&current!==el)return;if(tip){tip.style.opacity='0';tip.style.visibility='hidden'}if(current)current.removeAttribute('aria-describedby');current=null},70);
+  }
+  function eligible(root=document){return root.querySelectorAll?.('.nav .navBtn,.sideRoleBtn,.workflowNav a')||[]}
+  function wire(root=document){
+    eligible(root).forEach(el=>{
+      if(el.dataset.paceTipWired==='1'||!descriptionFor(el))return;el.dataset.paceTipWired='1';
+      el.addEventListener('mouseenter',()=>show(el));el.addEventListener('mouseleave',()=>hide(el));
+      el.addEventListener('focus',()=>show(el));el.addEventListener('blur',()=>hide(el));
+    });
+    const feedback=document.getElementById('paceleticsFeedbackShortcut');
+    if(feedback&&feedback.dataset.paceTipWired!=='1'){feedback.dataset.paceTipWired='1';feedback.addEventListener('mouseenter',()=>show(feedback));feedback.addEventListener('mouseleave',()=>hide(feedback));feedback.addEventListener('focus',()=>show(feedback));feedback.addEventListener('blur',()=>hide(feedback));}
+  }
+  function install(){wire();const observer=new MutationObserver(muts=>{for(const m of muts)for(const n of m.addedNodes)if(n.nodeType===1)wire(n)});observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('scroll',()=>{if(current)position(current)},{passive:true});window.addEventListener('resize',()=>{if(current)position(current)});}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+})();
