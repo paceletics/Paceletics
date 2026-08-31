@@ -130,3 +130,20 @@ function paceleticsPage(){
   if(!pages.has(page)||document.querySelector('script[src*="paceletics-shell.js"]'))return;
   const script=document.createElement('script');script.src='paceletics-shell.js?v=1.1.0';document.head.appendChild(script);
 })();
+
+// Beta feedback shortcut for signed-in web workflow pages.
+(function installBetaFeedbackShortcut(){
+  const page=paceleticsPage();
+  if(page==='index.html'||page===''||page==='feedback.html'||page==='join-club.html'||page==='join-athlete.html'||page==='reset-password.html')return;
+  function add(){
+    if(!document.body||document.getElementById('paceleticsFeedbackShortcut'))return;
+    const b=document.createElement('button');
+    b.id='paceleticsFeedbackShortcut';b.type='button';b.textContent='Beta Feedback';
+    b.setAttribute('aria-label','Send Beta feedback');
+    Object.assign(b.style,{position:'fixed',right:'14px',bottom:'14px',zIndex:'999',border:'1px solid #3b536f',borderRadius:'999px',padding:'10px 14px',background:'#13243a',color:'#ffd36a',font:'800 11px Inter,system-ui,sans-serif',boxShadow:'0 10px 32px rgba(0,0,0,.35)',cursor:'pointer'});
+    if(matchMedia('(max-width: 900px)').matches)b.style.bottom='82px';
+    b.onclick=()=>{location.href='feedback.html?from='+encodeURIComponent(page)};
+    document.body.appendChild(b);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();
+})();
