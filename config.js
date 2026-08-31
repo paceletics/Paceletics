@@ -3,7 +3,8 @@ window.PACELETICS_CONFIG = {
   supabasePublishableKey: "sb_publishable_aJEx3hoeS3gA8cCq1vwbWA_yG8QItxW"
 };
 
-// Reuse the stored Supabase session for Paceletics pages.
+// Shared helpers only. Dashboard routing and dashboard UI are handled
+// by dashboard.html and athlete-dashboard.html themselves.
 (function patchSupabaseCreateClient(){
   if(!window.supabase||typeof window.supabase.createClient!=='function')return;
   const original=window.supabase.createClient;
@@ -24,163 +25,13 @@ window.PACELETICS_CONFIG = {
   window.supabase.createClient=patched;
 })();
 
-// Athlete profile links for the cloud dashboard.
-(function installAthleteProfileLinks(){
-  function enhance(){
-    document.querySelectorAll('#athleteRows tr').forEach(row=>{
-      if(row.dataset.profileEnhanced==='1')return;
-      const del=row.querySelector('[data-delete-athlete]');
-      const first=row.querySelector('td');
-      if(!del||!first)return;
-      const id=del.getAttribute('data-delete-athlete');
-      const strong=first.querySelector('strong');
-      if(!id||!strong)return;
-      strong.style.cursor='pointer';
-      strong.style.textDecoration='underline';
-      strong.style.textDecorationColor='#ffb000';
-      strong.title='Open athlete profile';
-      strong.addEventListener('click',()=>location.href='athlete.html?id='+encodeURIComponent(id));
-      const b=document.createElement('button');
-      b.className='btn secondary';
-      b.textContent='Profile';
-      b.style.marginRight='6px';
-      b.addEventListener('click',()=>location.href='athlete.html?id='+encodeURIComponent(id));
-      del.parentNode.insertBefore(b,del);
-      row.dataset.profileEnhanced='1';
-    });
-  }
-  function install(){
-    enhance();
-    const target=document.getElementById('athleteRows');
-    if(target)new MutationObserver(enhance).observe(target,{childList:true,subtree:true});
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
-})();
+function paceleticsPage(){
+  return (location.pathname.split('/').pop()||'index.html').toLowerCase();
+}
 
-// Open the correct Session Builder from older dashboard markup when present.
-(function installSessionBuilderLinks(){
-  function install(){
-    ['buildBtn','buildInline'].forEach(id=>{
-      const el=document.getElementById(id);if(!el)return;
-      el.addEventListener('click',e=>{
-        e.preventDefault();e.stopImmediatePropagation();
-        location.href=window.PACELETICS_ACCOUNT_ROLE==='coach'?'coach-session.html?v=0.9.13':'session-builder.html?v=0.8.9';
-      },true);
-    });
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
-})();
-
-// Open the friendly result-entry page from older dashboard markup when present.
-(function installResultEntryLink(){
-  function install(){
-    const el=document.getElementById('logResultBtn');if(!el)return;
-    el.addEventListener('click',e=>{
-      e.preventDefault();e.stopImmediatePropagation();
-      location.href='result-entry.html?v=0.9.0';
-    },true);
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
-})();
-
-// Fallback only: add Performance Dashboard card if an older dashboard does not already include it.
-(function installPerformanceDashboardLink(){
-  function install(){
-    const grid=document.querySelector('#view-stats .grid');
-    if(!grid||document.getElementById('performanceDashboardCard')||grid.querySelector('button[onclick*="performance.html"]'))return;
-    const card=document.createElement('div');
-    card.id='performanceDashboardCard';card.className='card span12';
-    card.innerHTML='<div class="row"><div><h3 style="margin:0 0 4px">Performance Dashboard</h3><div class="muted">Compare like-for-like rep distances, pace trends, RPE and consistency.</div></div><button id="openPerformanceBtn" class="btn primary" type="button">Open Performance</button></div>';
-    grid.insertBefore(card,grid.firstChild);
-    document.getElementById('openPerformanceBtn').onclick=()=>location.href='performance.html?v=0.9.2';
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
-})();
-
-// v0.9.13: Role-aware dashboard controls for legacy/current dashboard markup.
-(function installRoleAwareDashboard(){
-  if(!/dashboard\.html$/i.test(location.pathname))return;
-  const validRoles=['athlete','coach','club'];
-  const roleTitle={athlete:'Athlete',coach:'Coach',club:'Club'};
-  const hide=el=>{if(el)el.style.display='none'};
-  const show=el=>{if(el)el.style.display=''};
-
-  async function applyRole(){
-    try{
-      const cfg=window.PACELETICS_CONFIG||{};
-      if(!window.supabase||!cfg.supabaseUrl||!cfg.supabasePublishableKey)return;
-      const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey);
-      const {data:sessionData}=await client.auth.getSession();
-      const authUser=sessionData?.session?.user;if(!authUser)return;
-
-      let profile=null;
-      try{
-        const q=await client.from('profiles').select('id,full_name,role').eq('id',authUser.id).maybeSingle();
-        if(!q.error)profile=q.data||null;
-      }catch(e){}
-
-      const metadata=authUser.user_metadata||{};
-      let role=profile?.role||metadata.account_type||metadata.role||'athlete';
-      if(!validRoles.includes(role))role='athlete';
-      const displayName=profile?.full_name||metadata.full_name||authUser.email||'';
-      const label=roleTitle[role]||'Athlete';
-
-      document.documentElement.dataset.accountRole=role;
-      window.PACELETICS_ACCOUNT_ROLE=role;
-
-      if(role==='athlete'){
-        location.replace('athlete-dashboard.html?v=0.9.13');
-        return;
-      }
-
-      const sideBrand=document.querySelector('.side .brand .muted');
-      if(sideBrand)sideBrand.textContent=label+' Dashboard · Cloud';
-      const version=document.querySelector('.version');
-      if(version)version.innerHTML='Beta v0.9.13<br>Plan. Train. Improve.';
-
-      const banner=document.querySelector('.banner');
-      if(banner&&!document.getElementById('accountRoleLine')){
-        const line=document.createElement('div');
-        line.id='accountRoleLine';line.className='muted';line.style.marginTop='5px';
-        line.textContent=(displayName?displayName+' · ':'')+label+' account';
-        banner.appendChild(line);
-      }
-
-      const actions=document.querySelector('.top .actions');
-      if(role==='club'&&actions&&!document.getElementById('clubManagementBtn')){
-        const b=document.createElement('button');
-        b.id='clubManagementBtn';b.className='btn secondary';b.type='button';
-        b.textContent='Club Management';
-        b.onclick=()=>location.href='club.html?v=0.9.13';
-        const logout=document.getElementById('logoutBtn');
-        actions.insertBefore(b,logout||null);
-      }
-      if(role==='club'&&actions&&!document.getElementById('clubReportsBtn')){
-        const b=document.createElement('button');
-        b.id='clubReportsBtn';b.className='btn secondary';b.type='button';
-        b.textContent='Club Reports';
-        b.onclick=()=>location.href='club-report.html?v=0.9.13';
-        const logout=document.getElementById('logoutBtn');
-        actions.insertBefore(b,logout||null);
-      }
-      if(role==='coach'&&actions&&!document.getElementById('myClubBtn')){
-        const b=document.createElement('button');
-        b.id='myClubBtn';b.className='btn secondary';b.type='button';
-        b.textContent='My Club';
-        b.onclick=()=>location.href='coach-club.html?v=0.9.13';
-        const logout=document.getElementById('logoutBtn');
-        actions.insertBefore(b,logout||null);
-      }
-
-      ['addAthleteBtn','buildBtn','addAthleteInline','buildInline'].forEach(id=>show(document.getElementById(id)));
-    }catch(e){console.warn('Paceletics role display could not be applied.',e)}
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyRole);else applyRole();
-})();
-
-// v0.8.8+: Date is optional in Session Builder.
+// Session Builder: date is optional.
 (function installOptionalSessionDate(){
-  if(!/session-builder\.html$/i.test(location.pathname))return;
+  if(paceleticsPage()!=='session-builder.html')return;
   function install(){
     const date=document.getElementById('date'),saveBtn=document.getElementById('saveBtn');
     if(!date||!saveBtn)return;
@@ -206,16 +57,16 @@ window.PACELETICS_CONFIG = {
         const rows=athletes.map(a=>({session_id:ins.data.id,athlete_id:a.id,assigned_by:user.id,status:'planned'}));
         const q=await sb.from('assignments').insert(rows);
         if(q.error){await sb.from('sessions').delete().eq('id',ins.data.id);throw q.error}
-        location.href='dashboard.html?v=0.9.13';
+        location.href='dashboard.html?v=0.9.16';
       }catch(e){alert(e.message||String(e))}finally{btn.disabled=false;btn.textContent='Save & assign session'}
     };
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
 
-// v0.8.9: Edit an existing saved session without replacing assignments/results.
+// Session Builder: edit an existing saved session while preserving assignments/results.
 (function installSessionEditMode(){
-  if(!/session-builder\.html$/i.test(location.pathname))return;
+  if(paceleticsPage()!=='session-builder.html')return;
   function install(){
     const saved=document.getElementById('savedSession'),loadBtn=document.getElementById('loadSessionBtn'),saveBtn=document.getElementById('saveBtn'),eventSelect=document.getElementById('event');
     if(!saved||!saveBtn)return;
@@ -248,119 +99,34 @@ window.PACELETICS_CONFIG = {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
 
-// v0.9.13: Coach dashboard polish. Upcoming shows planned work only and Sessions shows status.
-(function installCoachDashboardPolish(){
-  if(!/dashboard\.html$/i.test(location.pathname))return;
-  const cfg=window.PACELETICS_CONFIG||{};
-  if(!window.supabase||!cfg.supabaseUrl||!cfg.supabasePublishableKey)return;
-  const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey);
-  let rows=[];
-  let timer=null;
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
-  const today=()=>new Date().toISOString().slice(0,10);
-
-  function groupedSessions(){
-    const map=new Map();
-    rows.forEach(r=>{
-      if(!r?.session_id)return;
-      let x=map.get(r.session_id);
-      if(!x){x={id:r.session_id,title:r.title,event:r.event,main_set:r.main_set,recovery:r.recovery,effort:r.effort,scheduled_date:r.scheduled_date,statuses:[],count:0,planned:0};map.set(r.session_id,x)}
-      x.count++;
-      x.statuses.push(r.status||'planned');
-      if(r.status==='planned')x.planned++;
-    });
-    return [...map.values()].map(x=>{
-      const unique=[...new Set(x.statuses)];
-      x.status=unique.length===1?unique[0]:(unique.includes('planned')?'mixed':unique.join(' / '));
-      return x;
-    });
-  }
-
-  function patch(){
-    if(!rows.length)return;
-    const sessions=groupedSessions();
-    const upcoming=document.getElementById('upcoming');
-    if(upcoming){
-      const planned=sessions.filter(s=>s.planned>0&&(!s.scheduled_date||s.scheduled_date>=today())).sort((a,b)=>String(a.scheduled_date||'9999').localeCompare(String(b.scheduled_date||'9999'))).slice(0,8);
-      const html=planned.length?planned.map(s=>`<div class="item"><div class="row"><strong>${esc(s.title)}</strong><span class="badge">${s.effort||'—'}%</span></div><div class="muted">${esc(s.scheduled_date||'No date')} · ${s.planned} planned</div><div>${esc(s.main_set||'—')} · ${esc(s.recovery||'No recovery')}</div></div>`).join(''):'<div class="item muted">No planned upcoming sessions.</div>';
-      if(upcoming.innerHTML!==html)upcoming.innerHTML=html;
-    }
-
-    const table=document.querySelector('#view-sessions table');
-    const head=table?.querySelector('thead tr');
-    if(head&&!head.querySelector('[data-status-head]')){
-      const th=document.createElement('th');th.dataset.statusHead='1';th.textContent='Status';head.appendChild(th);
-    }
-    const body=document.getElementById('sessionRows');
-    if(body){
-      const ordered=[...sessions].sort((a,b)=>String(a.scheduled_date||'9999').localeCompare(String(b.scheduled_date||'9999'))||String(a.title||'').localeCompare(String(b.title||'')));
-      const html=ordered.length?ordered.map(s=>{const cls=s.status==='completed'?'badge goodBadge':'badge';const label=s.status==='mixed'?'Mixed':s.status.charAt(0).toUpperCase()+s.status.slice(1);return`<tr><td>${esc(s.scheduled_date||'—')}</td><td><strong>${esc(s.title||'Session')}</strong></td><td>${esc(s.event||'—')}</td><td>${esc(s.main_set||'—')}</td><td>${s.effort||'—'}%</td><td>${s.count}</td><td><span class="${cls}">${esc(label)}</span></td></tr>`}).join(''):'<tr><td colspan="7" class="muted">No sessions yet.</td></tr>';
-      if(body.innerHTML!==html)body.innerHTML=html;
-    }
-
-    const version=document.querySelector('.buildVersion');
-    if(version)version.innerHTML='Beta v0.9.13<br>Plan. Train. Improve.';
-    const myClub=document.getElementById('myClubBtn');
-    if(myClub)myClub.onclick=()=>location.href='coach-club.html?v=0.9.13';
-  }
-
-  function schedulePatch(){clearTimeout(timer);timer=setTimeout(patch,25)}
-
-  async function install(){
-    try{
-      const {data}=await client.auth.getSession();
-      const user=data?.session?.user;if(!user)return;
-      const p=await client.from('profiles').select('role').eq('id',user.id).maybeSingle();
-      if(p.data?.role!=='coach')return;
-      const q=await client.rpc('get_my_coach_result_context');
-      if(q.error)return;
-      rows=Array.isArray(q.data?.assignments)?q.data.assignments:[];
-      patch();
-      ['upcoming','sessionRows'].forEach(id=>{const el=document.getElementById(id);if(el)new MutationObserver(schedulePatch).observe(el,{childList:true,subtree:true})});
-      const refresh=document.getElementById('refreshAction');
-      if(refresh)refresh.addEventListener('click',async()=>{setTimeout(async()=>{const fresh=await client.rpc('get_my_coach_result_context');if(!fresh.error){rows=Array.isArray(fresh.data?.assignments)?fresh.data.assignments:[];patch()}},350)});
-    }catch(e){console.warn('Coach dashboard polish could not be applied.',e)}
-  }
-
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
-})();
-
-// Paceletics modern UI preview. Visual only; application logic is untouched.
+// Shared visual layer for login and workflow pages.
 (function installPaceleticsModernUI(){
-  const page=(location.pathname.split('/').pop()||'index.html').toLowerCase();
+  const page=paceleticsPage();
   function apply(){
     if(!document.body)return;
     document.body.classList.add('paceletics-modern');
     if(page==='index.html'||page==='')document.body.classList.add('paceletics-login');
-    if(page==='dashboard.html')document.body.classList.add('paceletics-dashboard');
     document.querySelectorAll('.logo').forEach(logo=>{
       if(logo.dataset.modernLogo==='1')return;
       if((logo.textContent||'').trim()==='P')logo.innerHTML='<span class="pace-mark">P</span>';
       logo.dataset.modernLogo='1';
     });
     if(!document.getElementById('paceleticsModernCss')){
-      const link=document.createElement('link');
-      link.id='paceleticsModernCss';
-      link.rel='stylesheet';
-      link.href='paceletics-modern.css?v=2.0.0';
-      document.head.appendChild(link);
+      const link=document.createElement('link');link.id='paceleticsModernCss';link.rel='stylesheet';link.href='paceletics-modern.css?v=2.0.1';document.head.appendChild(link);
     }
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply);else apply();
 })();
 
-// v0.9.15: Load the shared Paceletics app shell on workflow pages.
+// Load the shared Paceletics workflow shell only on workflow pages.
 (function installPaceleticsWorkflowShell(){
-  const page=(location.pathname.split('/').pop()||'').toLowerCase();
+  const page=paceleticsPage();
   const pages=new Set([
     'club.html','club-report.html','club-athletes.html','athlete.html',
     'session-builder.html','result-entry.html','performance.html',
     'coach-club.html','coach-session.html','coach-result-entry.html','coach-athlete.html',
     'athlete-result-entry.html'
   ]);
-  if(!pages.has(page))return;
-  if(document.querySelector('script[src*="paceletics-shell.js"]'))return;
-  const script=document.createElement('script');
-  script.src='paceletics-shell.js?v=1.0.0';
-  document.head.appendChild(script);
+  if(!pages.has(page)||document.querySelector('script[src*="paceletics-shell.js"]'))return;
+  const script=document.createElement('script');script.src='paceletics-shell.js?v=1.1.0';document.head.appendChild(script);
 })();
