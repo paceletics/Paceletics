@@ -217,7 +217,9 @@ function paceleticsPage(){
 // Uses a random first-party ID only; no IP address, full referrer, user-agent,
 // screen size, or fingerprint is sent or stored. Browser privacy signals are honoured.
 (function installPrivacyConsciousPageViews(){
-  let optedOut=false;\n  try{optedOut=localStorage.getItem('paceleticsAnalyticsOptOut')==='1'}catch(_){}\n  if(navigator.globalPrivacyControl===true||navigator.doNotTrack==='1'||optedOut)return;
+  let optedOut=false;
+  try{optedOut=localStorage.getItem('paceleticsAnalyticsOptOut')==='1'}catch(_){}
+  if(navigator.globalPrivacyControl===true||navigator.doNotTrack==='1'||optedOut)return;
   if(!/^(www\.)?paceletics\.com$/i.test(location.hostname))return;
   const cfg=window.PACELETICS_CONFIG||{};
   if(!window.supabase||!cfg.supabaseUrl||!cfg.supabasePublishableKey)return;
