@@ -257,9 +257,7 @@ function paceleticsPage(){
     }catch(_){return null}
   }
   function cleanPath(){
-    let path=location.pathname||'/';
-    try{path=decodeURI(path)}catch(_){}
-    return path.slice(0,300);
+    return (location.pathname||'/').slice(0,300);
   }
 
   const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey,{
