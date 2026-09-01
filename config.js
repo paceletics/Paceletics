@@ -212,3 +212,81 @@ function paceleticsPage(){
   function install(){wire();const observer=new MutationObserver(muts=>{for(const m of muts)for(const n of m.addedNodes)if(n.nodeType===1)wire(n)});observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('scroll',()=>{if(current)position(current)},{passive:true});window.addEventListener('resize',()=>{if(current)position(current)});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
+
+// Privacy-conscious beta page-view analytics.
+// Uses a random first-party ID only; no IP address, full referrer, user-agent,
+// screen size, or fingerprint is sent or stored. Browser privacy signals are honoured.
+(function installPrivacyConsciousPageViews(){
+  if(navigator.globalPrivacyControl===true||navigator.doNotTrack==='1'||localStorage.getItem('paceleticsAnalyticsOptOut')==='1')return;
+  if(!/^(www\.)?paceletics\.com$/i.test(location.hostname))return;
+  const cfg=window.PACELETICS_CONFIG||{};
+  if(!window.supabase||!cfg.supabaseUrl||!cfg.supabasePublishableKey)return;
+
+  function visitorId(){
+    const key='paceleticsAnonymousVisitorId';
+    try{
+      let id=localStorage.getItem(key);
+      if(!id){
+        id=crypto.randomUUID();
+        localStorage.setItem(key,id);
+      }
+      return id;
+    }catch(_){
+      return crypto.randomUUID();
+    }
+  }
+  function deviceCategory(){
+    const ua=navigator.userAgent||'';
+    if(/iPad|Tablet|PlayBook|Silk/i.test(ua)||(navigator.maxTouchPoints>1&&/Macintosh/i.test(ua)))return'tablet';
+    if(/Mobi|Android|iPhone|iPod/i.test(ua))return'mobile';
+    return /Windows|Macintosh|Linux|CrOS/i.test(ua)?'desktop':'unknown';
+  }
+  function browserCategory(){
+    const ua=navigator.userAgent||'';
+    if(/Edg\//i.test(ua))return'edge';
+    if(/Firefox\//i.test(ua))return'firefox';
+    if(/Chrome\//i.test(ua)&&!/Edg\//i.test(ua))return'chrome';
+    if(/Safari\//i.test(ua)&&!/Chrome\//i.test(ua))return'safari';
+    return'other';
+  }
+  function referrerDomain(){
+    if(!document.referrer)return null;
+    try{
+      const host=new URL(document.referrer).hostname.toLowerCase();
+      return host&&host!==location.hostname.toLowerCase()?host:null;
+    }catch(_){return null}
+  }
+  function cleanPath(){
+    let path=location.pathname||'/';
+    try{path=decodeURI(path)}catch(_){}
+    return path.slice(0,300);
+  }
+
+  const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey,{
+    auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+  });
+  client.from('page_views').insert({
+    visitor_id:visitorId(),
+    page_path:cleanPath(),
+    referrer_domain:referrerDomain(),
+    device_category:deviceCategory(),
+    browser_category:browserCategory()
+  }).then(({error})=>{if(error&&location.hostname==='localhost')console.debug('Page view not recorded',error.message)}).catch(()=>{});
+})();
+
+// Add the visitor analytics link to the existing secure Club Reports screen.
+(function installVisitorAnalyticsLink(){
+  if(paceleticsPage()!=='club-report.html')return;
+  function add(){
+    const actions=document.querySelector('.top .actions');
+    if(!actions||document.getElementById('visitorAnalyticsBtn'))return;
+    const button=document.createElement('button');
+    button.id='visitorAnalyticsBtn';
+    button.type='button';
+    button.className='btn secondary';
+    button.textContent='Visitor Analytics';
+    button.onclick=()=>{location.href='visitor-analytics.html'};
+    actions.insertBefore(button,actions.firstChild);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();
+})();
